@@ -1,0 +1,63 @@
+# H-LAJEPA base config
+
+backbone:
+  name: vjepa                   # vjepa | dinov2 | videomae
+  model_id: facebook/vjepa-b16  # HuggingFace model id / local path
+  feat_dim: 768                 # ViT-B hidden dim
+  patch_size: 16
+  frozen: true
+
+data:
+  dataset: ssv2                 # ssv2 | ego4d
+  root: /data/ssv2
+  feat_cache: /data/ssv2_feats  # precomputed feature cache dir
+  num_frames: 16
+  frame_stride: 2               # sample every Nth frame
+  img_size: 224
+  num_workers: 4
+
+vq:
+  codebook_size: 512            # K — number of latent action codes
+  code_dim: 256                 # dimension per code
+  commitment_cost: 0.25
+  ema_update: true              # use EMA codebook updates (more stable)
+  ema_decay: 0.99
+
+action_inferrer:
+  hidden_dim: 512
+  num_layers: 3
+  num_heads: 8
+  bottleneck_dim: 256           # width before VQ — narrow = more disentangled
+  dropout: 0.1
+
+low_level_predictor:
+  hidden_dim: 512
+  num_layers: 4
+  num_heads: 8
+  dropout: 0.1
+
+high_level_predictor:
+  hidden_dim: 512
+  num_layers: 4
+  num_heads: 8
+  segment_len: 16               # frames per segment
+  dropout: 0.1
+
+training:
+  batch_size: 64
+  lr: 3e-4
+  weight_decay: 1e-4
+  warmup_steps: 2000
+  max_steps: 100000
+  grad_clip: 1.0
+  loss_weights:
+    low_level: 1.0
+    high_level: 0.5
+    vq_commit: 0.25
+
+logging:
+  project: latent-world-model
+  run_name: base
+  log_every: 50
+  ckpt_every: 2000
+  ckpt_dir: experiments/checkpoints

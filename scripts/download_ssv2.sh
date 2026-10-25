@@ -1,38 +1,48 @@
 #!/bin/bash
 # Download Something-Something-v2
-# You get the download URL after registering at:
-# https://developer.qualcomm.com/software/ai-datasets/something-something
+# URLs from: https://developer.qualcomm.com/software/ai-datasets/something-something
 #
 # Usage:
 #   bash scripts/download_ssv2.sh
+
+set -e
 
 SSV2_DIR="/workspace/ssv2"
 mkdir -p "$SSV2_DIR/videos"
 mkdir -p "$SSV2_DIR/labels"
 
-echo "Downloading SSv2 label files..."
-# Labels (~50MB) — paste your label download URLs here
-# wget -c "<LABEL_URL>" -O "$SSV2_DIR/labels/something-something-v2-labels.json"
-# wget -c "<TRAIN_URL>"  -O "$SSV2_DIR/labels/something-something-v2-train.json"
-# wget -c "<VAL_URL>"    -O "$SSV2_DIR/labels/something-something-v2-validation.json"
+# ── 1. Download labels ────────────────────────────────────────────────────────
+echo "[1/3] Downloading labels..."
+wget -c \
+  "https://softwarecenter.qualcomm.com/api/download/software/dataset/AIDataset/Something-Something-V2/20bn-something-something-download-package-labels.zip" \
+  -O "$SSV2_DIR/labels.zip"
+
+echo "  Extracting labels..."
+unzip -o "$SSV2_DIR/labels.zip" -d "$SSV2_DIR/labels/"
+echo "  Labels ready: $(ls $SSV2_DIR/labels/)"
+
+# ── 2. Download video parts ───────────────────────────────────────────────────
+echo ""
+echo "[2/3] Downloading video parts (~19.4GB)..."
+
+wget -c \
+  "https://apigwx-aws.qualcomm.com/qsc/public/v1/api/download/software/dataset/AIDataset/Something-Something-V2/20bn-something-something-v2-00" \
+  -O "$SSV2_DIR/20bn-something-something-v2-00"
+
+wget -c \
+  "https://apigwx-aws.qualcomm.com/qsc/public/v1/api/download/software/dataset/AIDataset/Something-Something-V2/20bn-something-something-v2-01" \
+  -O "$SSV2_DIR/20bn-something-something-v2-01"
+
+# ── 3. Extract videos ─────────────────────────────────────────────────────────
+echo ""
+echo "[3/3] Extracting videos (this takes a few minutes)..."
+
+# Per the official instructions: unzip parts first, then cat | tar
+cd "$SSV2_DIR"
+unzip "20bn-something-something-v2-??"  2>/dev/null || true
+cat 20bn-something-something-v2-?? | tar -xvzf - -C "$SSV2_DIR/videos/"
 
 echo ""
-echo "Downloading SSv2 video parts (~20GB total, 20 parts)..."
-# Paste your video download URLs here — one per line
-# wget -c "<PART_00_URL>" -O "$SSV2_DIR/20bn-something-something-v2-00"
-# wget -c "<PART_01_URL>" -O "$SSV2_DIR/20bn-something-something-v2-01"
-# ... (repeat for all 20 parts)
-
-echo ""
-echo "Extracting videos..."
-for part in "$SSV2_DIR"/20bn-something-something-v2-*; do
-    if [ -f "$part" ]; then
-        echo "  Extracting $(basename $part)..."
-        tar -xf "$part" -C "$SSV2_DIR/videos/" 2>/dev/null || \
-        cat "$part" | tar zx -C "$SSV2_DIR/videos/"
-    fi
-done
-
-echo ""
-echo "Done! Total videos: $(ls $SSV2_DIR/videos/ | wc -l)"
-echo "Labels: $(ls $SSV2_DIR/labels/)"
+echo "Done!"
+echo "  Videos: $(ls $SSV2_DIR/videos/ | wc -l)"
+echo "  Labels: $(ls $SSV2_DIR/labels/)"

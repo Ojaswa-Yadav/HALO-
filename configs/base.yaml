@@ -1,10 +1,9 @@
 # H-LAJEPA base config
 
 backbone:
-  name: vjepa                                        # vjepa | dinov2 | videomae
-  checkpoint_path: /workspace/checkpoints/vjepa_vitb16.pth  # set by setup script
-  feat_dim: 768                                      # ViT-B hidden dim
-  patch_size: 16
+  name: dinov2                  # vjepa | dinov2 | videomae
+  feat_dim: 768                 # ViT-B hidden dim
+  patch_size: 14                # DINOv2 uses 14x14 patches → 256 patches @ 224px
   frozen: true
 
 data:

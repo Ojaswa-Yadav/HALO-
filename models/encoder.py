@@ -130,10 +130,14 @@ class FrozenEncoder(nn.Module):
 
         # For image ViTs (V-JEPA, DINOv2): encode each frame independently
         flat = rearrange(frames, "b t c h w -> (b t) c h w")
-        tokens = self.backbone.forward_features(flat)       # (B*T, N, D)
 
-        # timm may include CLS token as first token — keep all tokens
-        if tokens.dim() == 2:
-            tokens = tokens.unsqueeze(1)
+        if self.cfg.backbone.name == "dinov2":
+            # DINOv2 returns dict — patch tokens are under 'x_norm_patchtokens'
+            out = self.backbone.forward_features(flat)
+            tokens = out["x_norm_patchtokens"]              # (B*T, N, 768)
+        else:
+            tokens = self.backbone.forward_features(flat)   # (B*T, N, D)
+            if tokens.dim() == 2:
+                tokens = tokens.unsqueeze(1)
 
         return rearrange(tokens, "(b t) n d -> b t n d", b=B, t=T)

@@ -125,7 +125,11 @@ class SSv2Dataset(Dataset):
     def __getitem__(self, idx: int) -> Dict:
         sample   = self.samples[idx]
         video_id = str(sample["id"])
-        label    = int(sample.get("label", -1))
+        raw_label = sample.get("label", -1)
+        try:
+            label = int(raw_label)
+        except (ValueError, TypeError):
+            label = -1  # text labels used during pretraining — ignored
 
         if self.mode == "feat":
             frames = self._load_feat(video_id)    # (T, N, D)  — pre-encoded tokens

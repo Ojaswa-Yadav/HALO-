@@ -122,10 +122,13 @@ class SSv2Dataset(Dataset):
         label    = int(sample.get("label", -1))
 
         if self.mode == "feat":
-            frames = self._load_feat(video_id)    # (T, N, D)
+            frames = self._load_feat(video_id)    # (T, N, D)  — pre-encoded tokens
         else:
-            frames = self._load_raw(video_id)     # (T, C, H, W)
+            frames = self._load_raw(video_id)     # (T, C, H, W)  — raw frames
 
+        # HLAJEPA.forward() handles both shapes:
+        #   (B, T, N, D) → skips encoder (feat mode)
+        #   (B, T, C, H, W) → runs encoder on-the-fly (raw mode)
         return {
             "frames":   frames,
             "label":    label,

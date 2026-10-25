@@ -62,8 +62,8 @@ class ActionInferrer(nn.Module):
             z_t:  (B, N, D)  patch tokens at time t
             z_tk: (B, N, D)  patch tokens at time t+k
         Returns:
-            code:    (B, code_dim)   quantized action code
-            indices: (B,)            codebook index
+            code:    (B, bottleneck_dim)  quantized action code (same dim as bottleneck)
+            indices: (B,)                 codebook index
             vq_loss: scalar
         """
         # pool to frame-level

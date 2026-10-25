@@ -66,11 +66,17 @@ class SSv2Dataset(Dataset):
                 "Either install decord or run scripts/extract_features.py first."
             )
             self.mode = "raw"
-            self.video_dir = root / "videos"
+            # SSv2 extracts into a subdirectory — handle both layouts
+            video_dir = root / "videos" / "20bn-something-something-v2"
+            if not video_dir.exists():
+                video_dir = root / "videos"
+            self.video_dir = video_dir
             self.transform = build_video_transform(cfg.data.img_size)
 
-        # load metadata
-        label_file = root / "labels" / f"{split}.json"
+        # load metadata — handle nested labels/ folder from zip extraction
+        label_file = root / "labels" / "labels" / f"{split}.json"
+        if not label_file.exists():
+            label_file = root / "labels" / f"{split}.json"
         with open(label_file) as f:
             meta = json.load(f)
 

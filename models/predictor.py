@@ -44,15 +44,21 @@ class _TransformerPredictor(nn.Module):
             pred: (B, N, D_out)  predicted future tokens
         """
         B, N, _ = z.shape
-        ctx   = self.in_proj(z)                                # (B, N, H)
-        cond_ = self.cond_proj(cond).unsqueeze(1)              # (B, 1, H)
-        pred_tok = self.pred_token.expand(B, N, -1)            # (B, N, H)
 
-        # sequence: [context | action_cond | pred_query]
-        seq = torch.cat([ctx, cond_, pred_tok], dim=1)         # (B, 2N+1, H)
-        out = self.transformer(seq)                            # (B, 2N+1, H)
+        # pool patches to single token → transformer on 3 tokens → unpool
+        # keeps sequence length at 3 regardless of N (memory efficient)
+        z_pooled = z.mean(dim=1, keepdim=True)                 # (B, 1, D_in)
+        ctx      = self.in_proj(z_pooled)                      # (B, 1, H)
+        cond_    = self.cond_proj(cond).unsqueeze(1)           # (B, 1, H)
+        pred_tok = self.pred_token[:, :1].expand(B, -1, -1)   # (B, 1, H)
 
-        pred = self.out_proj(out[:, -N:])                      # (B, N, D_out)
+        # sequence: [context(1) | action_cond(1) | pred_query(1)] = 3 tokens
+        seq = torch.cat([ctx, cond_, pred_tok], dim=1)         # (B, 3, H)
+        out = self.transformer(seq)                            # (B, 3, H)
+
+        # project pred token back to output dim, then expand to N patches
+        pred_pooled = self.out_proj(out[:, -1:])               # (B, 1, D_out)
+        pred = pred_pooled.expand(-1, N, -1)                   # (B, N, D_out)
         return pred
 
 

@@ -99,10 +99,16 @@ class SSv2Dataset(Dataset):
 
     def _load_raw(self, video_id: str) -> torch.Tensor:
         path = self.video_dir / f"{video_id}.webm"
-        vr = VideoReader(str(path), ctx=cpu(0))
-        T_total = len(vr)
-        indices = self._sample_indices(T_total)
-        frames = vr.get_batch(indices).asnumpy()   # (T, H, W, C) uint8
+        try:
+            vr = VideoReader(str(path), ctx=cpu(0))
+            T_total = len(vr)
+            indices = self._sample_indices(T_total)
+            frames = vr.get_batch(indices).asnumpy()   # (T, H, W, C) uint8
+        except Exception:
+            # corrupted / undecodable video — return blank frames
+            H = W = self.cfg.data.img_size
+            frames = np.zeros((self.num_frames, H, W, 3), dtype=np.uint8)
+
         frames_t = []
         for f in frames:
             img = Image.fromarray(f)
